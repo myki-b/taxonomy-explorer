@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><title>{{ taxon.name }}</title></head>
+<body>
+  <p><a href="{% url 'taxon_list' %}">&larr; All taxa</a></p>
+
+  <h1>{{ taxon.name }}</h1>
+  <p>Rank: {{ taxon.get_rank_display }}</p>
+
+  <h2>Parent</h2>
+  {% if taxon.parent %}
+    <p><a href="{% url 'taxon_detail' taxon.parent.pk %}">{{ taxon.parent.name }}</a></p>
+  {% else %}
+    <p>None (this is a root taxon)</p>
+  {% endif %}
+
+  <h2>Children</h2>
+  <ul>
+    {% for child in taxon.children.all %}
+      <li><a href="{% url 'taxon_detail' child.pk %}">{{ child.name }}</a></li>
+    {% empty %}
+      <li>No children.</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

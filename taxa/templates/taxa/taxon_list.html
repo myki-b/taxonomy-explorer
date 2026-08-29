@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Taxa</title></head>
+<body>
+  <h1>Taxa</h1>
+  <ul>
+    {% for taxon in taxons %}
+      <li>
+        <a href="{% url 'taxon_detail' taxon.pk %}">{{ taxon.name }}</a>
+        ({{ taxon.get_rank_display }})
+      </li>
+    {% empty %}
+      <li>No taxa yet.</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
