@@ -2,17 +2,16 @@
 <html>
 <head><title>{{ taxon.name }}</title></head>
 <body>
-  <p><a href="{% url 'taxon_list' %}">&larr; All taxa</a></p>
+  <nav aria-label="breadcrumb">
+    <a href="{% url 'taxon_list' %}">All taxa</a>
+    {% for ancestor in taxon.get_ancestors %}
+      &rsaquo; <a href="{% url 'taxon_detail' ancestor.pk %}">{{ ancestor.name }}</a>
+    {% endfor %}
+    &rsaquo; {{ taxon.name }}
+  </nav>
 
   <h1>{{ taxon.name }}</h1>
   <p>Rank: {{ taxon.get_rank_display }}</p>
-
-  <h2>Parent</h2>
-  {% if taxon.parent %}
-    <p><a href="{% url 'taxon_detail' taxon.parent.pk %}">{{ taxon.parent.name }}</a></p>
-  {% else %}
-    <p>None (this is a root taxon)</p>
-  {% endif %}
 
   <h2>Children</h2>
   <ul>

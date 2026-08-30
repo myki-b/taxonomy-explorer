@@ -19,3 +19,14 @@ class Taxon(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_ancestors(self):
+        """Return this taxon's ancestors, ordered from the root down to the
+        immediate parent (this taxon itself is not included)."""
+        ancestors = []
+        node = self.parent
+        while node is not None:
+            ancestors.append(node)
+            node = node.parent
+        ancestors.reverse()  # collected child->root, so flip to root->parent
+        return ancestors
