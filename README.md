@@ -1,9 +1,18 @@
 # 🧬 Taxonomy Explorer
 
+## What is it?
+
 A small Django application for browsing the biological classification of species.
 Taxonomy data is fetched on demand from the [GBIF](https://www.gbif.org/) API and
 cached in the local database, so each species' full lineage (kingdom → species)
 is stored once and then browsable without spamming GBIF.
+
+This application is not designed to be practically useful in the real world.
+There are other services which perform this role to a much better degree.
+It is simply an excuse to build a Django application to serve as a learning exercise
+and quick portfolio piece.
+
+<img width="802" height="807" alt="image" src="https://github.com/user-attachments/assets/e12c1744-b920-439e-abbd-2f980dba84df" />
 
 ## Features
 
@@ -98,8 +107,6 @@ python manage.py fetch_taxon --all                      # everything in the data
 
 ## Design decisions
 
-A few choices worth calling out:
-
 - **API results are cached in the DB via `get_or_create`.** The lookup matches on
   `name` + `rank`, so importing a second species in the same family reuses the
   existing ancestors instead of duplicating them. This is the caching requirement
@@ -147,12 +154,6 @@ A few choices worth calling out:
   a trusted API returning a small set of formatting tags, but a hardened version
   would sanitise it (e.g. with `bleach`) before storing it, rather than trusting
   the upstream response.
-
-## Next steps
-
-- `get_ancestors()` walks the parent chain one query per level.
-  Fine for shallow trees; a larger dataset would call for a dedicated tree library
-  (e.g. `django-mptt`) or a recursive query.
 
 ## Running the tests
 
