@@ -12,9 +12,13 @@ is stored once and then browsable without spamming GBIF.
   its immediate children, so the classification tree is navigable in both directions.
 - A management command fetches a species from GBIF and builds its whole lineage,
   reusing any ancestors already in the database.
-- **Search any species** from the header on every page. Cached taxa are matched
-  locally; on a miss the app fetches the species from GBIF, caches it, and jumps
-  straight to its page (a cache-aside strategy, with the database as the cache).
+- **Search any species** from the header on every page, by **scientific or common
+  name** — "Vulpes vulpes", "red fox", "bald eagle" and "giant panda" all work.
+  Cached taxa are matched locally; on a miss the app resolves the name, fetches
+  the species from GBIF, caches it, and jumps straight to its page (a cache-aside
+  strategy, with the database as the cache).
+- Each taxon is **enriched from Wikipedia** with a summary, photo, common name, and
+  a link to the full article — also cached, so the API is called once per taxon.
 
 ## Tech stack
 
@@ -66,6 +70,13 @@ python manage.py fetch_taxon "Panthera leo"
 Running it a second time creates nothing new — existing taxa are served from the
 cache rather than re-fetched.
 
+To deliberately re-fetch data that is already cached:
+
+```bash
+python manage.py fetch_taxon "Panthera leo" --refresh   # one lineage
+python manage.py fetch_taxon --all                      # everything in the database
+```
+
 ## Design decisions
 
 A few choices worth calling out:
@@ -79,17 +90,36 @@ A few choices worth calling out:
   place for deliberate, batch-style data loading.
 - **Ancestry logic lives on the model** (`Taxon.get_ancestors`), keeping views thin
   and the behaviour reusable across views, templates, and the shell.
-- **GBIF integration lives in a service module** (`taxa/services.py`), so the
-  management command and the search view share one copy of the fetch-and-cache
+- **External API integration lives in a service module** (`taxa/services.py`), so
+  the management command and the search view share one copy of the fetch-and-cache
   logic instead of duplicating it.
+- **Wikipedia enrichment fails soft.** A missing article or an unreachable
+  Wikipedia leaves the taxon without a blurb rather than breaking the request;
+  GBIF failures, by contrast, raise, because without them there is nothing to show.
+- **Common names are resolved in three escalating stages**, cheapest first, so the
+  common case costs a single API call:
+  1. treat the query as a scientific name and ask GBIF to match it;
+  2. search GBIF's vernacular index, accepting a result only if it genuinely
+     lists the query as one of its common names (GBIF's search is fuzzy, and
+     "lion" otherwise matches a lizard called *Anolis lionotus*);
+  3. fall back to Wikipedia, following the article to its Wikidata item and
+     reading the "taxon name" property — this catches everyday single-word
+     names such as "tiger" that GBIF's vernacular index misses.
 - **Configuration comes from the environment.** The secret key is read from a
   `.env` file (git-ignored) rather than hard-coded, with a committed `.env.example`
   documenting what is required.
 
 ## Known limitations
 
-- There is currently no way to track stale records - a new API request is never made
-  for a record that exists within the DB.
+- Cached records have no expiry or staleness tracking: a taxon in the database is
+  never automatically re-fetched. Refreshing is a manual, explicit action
+  (`--refresh` / `--all`). A production version would store a `last_fetched`
+  timestamp and treat records older than some TTL as stale.
+- Wikipedia's `extract_html` is rendered with Django's `|safe` filter, which turns
+  off auto-escaping for that field. This is acceptable because the HTML comes from
+  a trusted API returning a small set of formatting tags, but a hardened version
+  would sanitise it (e.g. with `bleach`) before storing it, rather than trusting
+  the upstream response.
 
 ## Next steps
 

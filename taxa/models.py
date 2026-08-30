@@ -17,6 +17,12 @@ class Taxon(models.Model):
     rank = models.CharField(max_length=20, choices=RANK_CHOICES)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
 
+    # Enrichment fetched from Wikipedia and cached. Blank when unavailable.
+    common_name = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    image_url = models.URLField(blank=True)
+    wikipedia_url = models.URLField(blank=True)
+
     def __str__(self):
         return self.name
 

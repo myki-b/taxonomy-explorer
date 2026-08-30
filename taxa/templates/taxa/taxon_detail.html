@@ -12,7 +12,22 @@
   </nav>
 
   <h1>{{ taxon.name }}</h1>
+  {% if taxon.common_name %}<p class="common-name">{{ taxon.common_name }}</p>{% endif %}
   <p><span class="rank-badge">{{ taxon.get_rank_display }}</span></p>
+
+  {% if taxon.image_url or taxon.description %}
+    <div class="summary">
+      {% if taxon.image_url %}
+        <img class="summary-image" src="{{ taxon.image_url }}" alt="{{ taxon.name }}">
+      {% endif %}
+      {% if taxon.description %}
+        <div class="summary-text">{{ taxon.description|safe }}</div>
+      {% endif %}
+      {% if taxon.wikipedia_url %}
+        <p><a href="{{ taxon.wikipedia_url }}" target="_blank" rel="noopener">Read more on Wikipedia &rarr;</a></p>
+      {% endif %}
+    </div>
+  {% endif %}
 
   <h2>Children</h2>
   <ul class="children-list">

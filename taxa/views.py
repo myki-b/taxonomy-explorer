@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
 
 from .models import Taxon
@@ -20,8 +21,10 @@ def taxon_search(request):
     error = None
 
     if query:
-        # 1. Look in the cache (the local database) first.
-        results = list(Taxon.objects.filter(name__icontains=query))
+        # 1. Look in the cache (the local database) first — scientific OR common name.
+        results = list(Taxon.objects.filter(
+            Q(name__icontains=query) | Q(common_name__icontains=query)
+        ))
 
         # 2. On a cache miss, ask GBIF, store the result, and jump to it.
         if not results:
