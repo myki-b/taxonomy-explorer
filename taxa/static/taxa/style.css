@@ -23,6 +23,11 @@ a:hover { text-decoration: underline; }
 .site-header {
   background: var(--accent);
   padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 .site-title {
   color: #fff;
@@ -30,6 +35,34 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
 }
 .site-title:hover { text-decoration: none; }
+
+.search { display: flex; gap: 0.4rem; }
+.search input {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  min-width: 220px;
+}
+.search button {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background: #1f5c42;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.search button:hover { background: #17472f; }
+
+.notice { color: var(--muted); }
+.notice-error {
+  color: #8a1c1c;
+  background: #fdecec;
+  border: 1px solid #f5c2c2;
+  border-radius: 6px;
+  padding: 0.6rem 0.9rem;
+}
 
 .container {
   max-width: 720px;

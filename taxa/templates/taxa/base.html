@@ -10,6 +10,10 @@
 <body>
   <header class="site-header">
     <a class="site-title" href="{% url 'taxon_list' %}">🧬 Taxonomy Explorer</a>
+    <form class="search" action="{% url 'taxon_search' %}" method="get" role="search">
+      <input type="search" name="q" placeholder="Search any species…" value="{{ request.GET.q }}">
+      <button type="submit">Search</button>
+    </form>
   </header>
   <main class="container">
     {% block content %}{% endblock %}

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 from django.urls import reverse
 
@@ -34,3 +36,27 @@ class TaxonViewTests(TestCase):
     def test_detail_page_404_for_missing_taxon(self):
         response = self.client.get(reverse("taxon_detail", args=[9999]))
         self.assertEqual(response.status_code, 404)
+
+
+class TaxonSearchTests(TestCase):
+    def test_search_finds_cached_taxon_without_calling_gbif(self):
+        Taxon.objects.create(name="Vulpes vulpes", rank="species")
+
+        # patch the service so a cache hit never touches the network.
+        with patch("taxa.views.fetch_and_cache_taxon") as mock_fetch:
+            response = self.client.get(reverse("taxon_search"), {"q": "Vulpes"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Vulpes vulpes")
+        mock_fetch.assert_not_called()
+
+    def test_search_falls_back_to_gbif_and_redirects_on_miss(self):
+        # The query matches nothing cached, so the view should call the service.
+        # The service (mocked) "returns" a taxon as if freshly fetched from GBIF.
+        fetched = Taxon.objects.create(name="Panthera leo", rank="species")
+
+        with patch("taxa.views.fetch_and_cache_taxon", return_value=fetched) as mock_fetch:
+            response = self.client.get(reverse("taxon_search"), {"q": "Lion"})
+
+        mock_fetch.assert_called_once_with("Lion")
+        self.assertRedirects(response, reverse("taxon_detail", args=[fetched.pk]))

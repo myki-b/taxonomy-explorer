@@ -12,6 +12,9 @@ is stored once and then browsable without spamming GBIF.
   its immediate children, so the classification tree is navigable in both directions.
 - A management command fetches a species from GBIF and builds its whole lineage,
   reusing any ancestors already in the database.
+- **Search any species** from the header on every page. Cached taxa are matched
+  locally; on a miss the app fetches the species from GBIF, caches it, and jumps
+  straight to its page (a cache-aside strategy, with the database as the cache).
 
 ## Tech stack
 
@@ -76,6 +79,9 @@ A few choices worth calling out:
   place for deliberate, batch-style data loading.
 - **Ancestry logic lives on the model** (`Taxon.get_ancestors`), keeping views thin
   and the behaviour reusable across views, templates, and the shell.
+- **GBIF integration lives in a service module** (`taxa/services.py`), so the
+  management command and the search view share one copy of the fetch-and-cache
+  logic instead of duplicating it.
 - **Configuration comes from the environment.** The secret key is read from a
   `.env` file (git-ignored) rather than hard-coded, with a committed `.env.example`
   documenting what is required.
@@ -90,7 +96,6 @@ A few choices worth calling out:
 - `get_ancestors()` walks the parent chain one query per level.
   Fine for shallow trees; a larger dataset would call for a dedicated tree library
   (e.g. `django-mptt`) or a recursive query.
-- No search yet — species are added via the fetch command and browsed by hand.
 
 ## Running the tests
 

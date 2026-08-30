@@ -1,0 +1,25 @@
+{% extends "taxa/base.html" %}
+
+{% block title %}Search &middot; Taxonomy Explorer{% endblock %}
+
+{% block content %}
+  <h1>Search results</h1>
+
+  {% if error %}
+    <p class="notice notice-error">{{ error }}</p>
+  {% elif query %}
+    <p class="notice">Results for &ldquo;{{ query }}&rdquo;</p>
+    <ul class="taxon-list">
+      {% for taxon in results %}
+        <li>
+          <a href="{% url 'taxon_detail' taxon.pk %}">{{ taxon.name }}</a>
+          <span class="rank-badge">{{ taxon.get_rank_display }}</span>
+        </li>
+      {% empty %}
+        <li>No taxon found for &ldquo;{{ query }}&rdquo; — try a scientific name such as <em>Panthera leo</em>.</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="notice">Type a species name in the search box above.</p>
+  {% endif %}
+{% endblock %}
