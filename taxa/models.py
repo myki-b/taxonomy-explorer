@@ -1,9 +1,10 @@
+from datetime import date
+
 from django.db import models
 
 # Create your models here.
 class Taxon(models.Model):
     RANK_CHOICES = [
-        ('domain', 'Domain'),
         ('kingdom', 'Kingdom'),
         ('phylum', 'Phylum'),
         ('class', 'Class'),
@@ -36,3 +37,25 @@ class Taxon(models.Model):
             node = node.parent
         ancestors.reverse()  # collected child->root, so flip to root->parent
         return ancestors
+    @classmethod
+    def of_the_day(cls, today=None):
+        """Return a taxon chosen deterministically from today's date.
+
+        The same date always yields the same taxon, and it changes at midnight,
+        without storing anything or running a scheduled job. Species with a
+        description are preferred so the highlighted card has something to show.
+
+        ``today`` can be passed in to make the choice testable.
+        """
+        candidates = cls.objects.filter(rank='species').exclude(description='')
+        if not candidates.exists():
+            candidates = cls.objects.all()
+
+        count = candidates.count()
+        if not count:
+            return None
+
+        # toordinal() increases by exactly one per day, so the index advances
+        # predictably and wraps around the available taxa.
+        day_number = (today or date.today()).toordinal()
+        return candidates.order_by('pk')[day_number % count]

@@ -133,3 +133,16 @@ nav[aria-label="breadcrumb"] {
   font-size: 0.85rem;
   padding: 2rem 1rem;
 }
+
+/* Taxon of the day */
+.featured { margin-bottom: 2.5rem; }
+.featured-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+.featured-name { margin: 0 0 0.2rem; font-size: 1.4rem; }
+.featured .common-name { margin-bottom: 0.8rem; }

@@ -6,8 +6,16 @@ from .services import GBIFError, fetch_and_cache_taxon
 
 
 def taxon_list(request):
-    taxons = Taxon.objects.all()
-    return render(request, 'taxa/taxon_list.html', {'taxons': taxons})
+    """The home page: the kingdoms to browse into, plus today's featured taxon.
+
+    Listing every taxon would grow unwieldy, so we show only the roots of the
+    tree and let people drill down from there (or use search).
+    """
+    kingdoms = Taxon.objects.filter(rank='kingdom').order_by('name')
+    return render(request, 'taxa/taxon_list.html', {
+        'kingdoms': kingdoms,
+        'taxon_of_the_day': Taxon.of_the_day(),
+    })
 
 
 def taxon_detail(request, pk):

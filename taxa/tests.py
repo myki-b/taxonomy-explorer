@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -21,6 +22,43 @@ class TaxonModelTests(TestCase):
     def test_root_taxon_has_no_ancestors(self):
         root = Taxon.objects.create(name="Animalia", rank="kingdom")
         self.assertEqual(root.get_ancestors(), [])
+
+
+class TaxonOfTheDayTests(TestCase):
+    def setUp(self):
+        for name in ["Vulpes vulpes", "Panthera leo", "Ursus maritimus"]:
+            Taxon.objects.create(name=name, rank="species", description="<p>A species.</p>")
+
+    def test_same_date_always_gives_the_same_taxon(self):
+        first = Taxon.of_the_day(today=date(2026, 8, 30))
+        second = Taxon.of_the_day(today=date(2026, 8, 30))
+        self.assertEqual(first, second)
+
+    def test_choice_changes_from_one_day_to_the_next(self):
+        picks = {Taxon.of_the_day(today=date(2026, 8, d)).pk for d in range(1, 4)}
+        # Three consecutive days should cycle through three different taxa.
+        self.assertEqual(len(picks), 3)
+
+    def test_prefers_species_that_have_a_description(self):
+        Taxon.objects.create(name="Animalia", rank="kingdom")  # no description
+        for _ in range(10):
+            self.assertNotEqual(Taxon.of_the_day(today=date(2026, 8, 30)).name, "Animalia")
+
+    def test_returns_none_when_database_is_empty(self):
+        Taxon.objects.all().delete()
+        self.assertIsNone(Taxon.of_the_day(today=date(2026, 8, 30)))
+
+
+class HomePageTests(TestCase):
+    def test_lists_kingdoms_but_not_deeper_ranks(self):
+        Taxon.objects.create(name="Animalia", rank="kingdom")
+        Taxon.objects.create(name="Vulpes vulpes", rank="species")
+
+        response = self.client.get(reverse("taxon_list"))
+
+        self.assertContains(response, "Animalia")
+        # Species are reachable by drilling down or searching, not listed here.
+        self.assertNotContains(response, "Vulpes vulpes")
 
 
 class TaxonViewTests(TestCase):

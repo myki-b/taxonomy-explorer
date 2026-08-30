@@ -7,7 +7,10 @@ is stored once and then browsable without spamming GBIF.
 
 ## Features
 
-- Browse all cached taxa and drill into any one of them.
+- The home page lists the **kingdoms** to drill down from, rather than every
+  cached taxon, so it stays readable as the database grows.
+- A **taxon of the day**, chosen deterministically from the current date, is
+  featured on the home page.
 - Each taxon's page shows a **breadcrumb trail** of its full ancestry and a list of
   its immediate children, so the classification tree is navigable in both directions.
 - A management command fetches a species from GBIF and builds its whole lineage,
@@ -90,6 +93,10 @@ A few choices worth calling out:
   place for deliberate, batch-style data loading.
 - **Ancestry logic lives on the model** (`Taxon.get_ancestors`), keeping views thin
   and the behaviour reusable across views, templates, and the shell.
+- **The taxon of the day is derived, not stored.** `Taxon.of_the_day()` indexes
+  into the cached species using `date.toordinal() % count`, so the choice is
+  stable for a whole day and rotates at midnight without a scheduled job or an
+  extra table. The date can be injected, which makes it straightforward to test.
 - **External API integration lives in a service module** (`taxa/services.py`), so
   the management command and the search view share one copy of the fetch-and-cache
   logic instead of duplicating it.
@@ -111,6 +118,9 @@ A few choices worth calling out:
 
 ## Known limitations
 
+- The taxon of the day is derived from the number of cached species, so caching
+  a new species can change the day's pick before midnight. Persisting the choice
+  per date would make it stable.
 - Cached records have no expiry or staleness tracking: a taxon in the database is
   never automatically re-fetched. Refreshing is a manual, explicit action
   (`--refresh` / `--all`). A production version would store a `last_fetched`
