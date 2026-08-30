@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Taxonomy Explorer{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'taxa/style.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="site-title" href="{% url 'taxon_list' %}">🧬 Taxonomy Explorer</a>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <p>Data from the <a href="https://www.gbif.org/">Global Biodiversity Information Facility</a></p>
+  </footer>
+</body>
+</html>

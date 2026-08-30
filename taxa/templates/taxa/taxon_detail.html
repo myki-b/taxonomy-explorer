@@ -1,7 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head><title>{{ taxon.name }}</title></head>
-<body>
+{% extends "taxa/base.html" %}
+
+{% block title %}{{ taxon.name }} &middot; Taxonomy Explorer{% endblock %}
+
+{% block content %}
   <nav aria-label="breadcrumb">
     <a href="{% url 'taxon_list' %}">All taxa</a>
     {% for ancestor in taxon.get_ancestors %}
@@ -11,15 +12,14 @@
   </nav>
 
   <h1>{{ taxon.name }}</h1>
-  <p>Rank: {{ taxon.get_rank_display }}</p>
+  <p><span class="rank-badge">{{ taxon.get_rank_display }}</span></p>
 
   <h2>Children</h2>
-  <ul>
+  <ul class="children-list">
     {% for child in taxon.children.all %}
       <li><a href="{% url 'taxon_detail' child.pk %}">{{ child.name }}</a></li>
     {% empty %}
       <li>No children.</li>
     {% endfor %}
   </ul>
-</body>
-</html>
+{% endblock %}

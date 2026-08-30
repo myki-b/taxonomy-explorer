@@ -1,17 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head><title>Taxa</title></head>
-<body>
-  <h1>Taxa</h1>
-  <ul>
+{% extends "taxa/base.html" %}
+
+{% block title %}All taxa &middot; Taxonomy Explorer{% endblock %}
+
+{% block content %}
+  <h1>All taxa</h1>
+  <ul class="taxon-list">
     {% for taxon in taxons %}
       <li>
         <a href="{% url 'taxon_detail' taxon.pk %}">{{ taxon.name }}</a>
-        ({{ taxon.get_rank_display }})
+        <span class="rank-badge">{{ taxon.get_rank_display }}</span>
       </li>
     {% empty %}
       <li>No taxa yet.</li>
     {% endfor %}
   </ul>
-</body>
-</html>
+{% endblock %}
