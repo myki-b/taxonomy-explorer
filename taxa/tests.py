@@ -1,11 +1,15 @@
 from datetime import date
+from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import Taxon
-from .services import fetch_and_cache_taxon
+from .services import GBIFError, fetch_and_cache_taxon
 
 
 class TaxonModelTests(TestCase):
@@ -24,29 +28,29 @@ class TaxonModelTests(TestCase):
         self.assertEqual(root.get_ancestors(), [])
 
 
-class TaxonOfTheDayTests(TestCase):
+class TaxonSpotlightTests(TestCase):
     def setUp(self):
         for name in ["Vulpes vulpes", "Panthera leo", "Ursus maritimus"]:
             Taxon.objects.create(name=name, rank="species", description="<p>A species.</p>")
 
     def test_same_date_always_gives_the_same_taxon(self):
-        first = Taxon.of_the_day(today=date(2026, 8, 30))
-        second = Taxon.of_the_day(today=date(2026, 8, 30))
+        first = Taxon.spotlight(today=date(2026, 8, 30))
+        second = Taxon.spotlight(today=date(2026, 8, 30))
         self.assertEqual(first, second)
 
     def test_choice_changes_from_one_day_to_the_next(self):
-        picks = {Taxon.of_the_day(today=date(2026, 8, d)).pk for d in range(1, 4)}
+        picks = {Taxon.spotlight(today=date(2026, 8, d)).pk for d in range(1, 4)}
         # Three consecutive days should cycle through three different taxa.
         self.assertEqual(len(picks), 3)
 
     def test_prefers_species_that_have_a_description(self):
         Taxon.objects.create(name="Animalia", rank="kingdom")  # no description
         for _ in range(10):
-            self.assertNotEqual(Taxon.of_the_day(today=date(2026, 8, 30)).name, "Animalia")
+            self.assertNotEqual(Taxon.spotlight(today=date(2026, 8, 30)).name, "Animalia")
 
     def test_returns_none_when_database_is_empty(self):
         Taxon.objects.all().delete()
-        self.assertIsNone(Taxon.of_the_day(today=date(2026, 8, 30)))
+        self.assertIsNone(Taxon.spotlight(today=date(2026, 8, 30)))
 
 
 class HomePageTests(TestCase):
@@ -120,6 +124,54 @@ class CommonNameResolutionTests(TestCase):
     @patch("taxa.services._gbif_match", return_value=None)
     def test_returns_none_when_nothing_resolves(self, mock_match, mock_vern, mock_wd):
         self.assertIsNone(fetch_and_cache_taxon("zzznotathing"))
+
+
+class SeedCommandTests(TestCase):
+    """The seed command should drive the shared service and survive failures."""
+
+    @patch("taxa.management.commands.seed_taxa.time.sleep")  # no real waiting
+    @patch("taxa.management.commands.seed_taxa.fetch_and_cache_taxon")
+    def test_limit_controls_how_many_species_are_fetched(self, mock_fetch, mock_sleep):
+        mock_fetch.return_value = Taxon(name="Stub", rank="species")
+
+        call_command("seed_taxa", limit=3, delay=0, stdout=StringIO())
+
+        self.assertEqual(mock_fetch.call_count, 3)
+
+    @patch("taxa.management.commands.seed_taxa.time.sleep")
+    @patch("taxa.management.commands.seed_taxa.fetch_and_cache_taxon")
+    def test_one_failure_does_not_abort_the_batch(self, mock_fetch, mock_sleep):
+        # The first species blows up; the remaining two must still be attempted.
+        mock_fetch.side_effect = [
+            GBIFError("network down"),
+            Taxon(name="Stub", rank="species"),
+            None,  # no match
+        ]
+
+        out = StringIO()
+        call_command("seed_taxa", limit=3, delay=0, stdout=out)
+
+        self.assertEqual(mock_fetch.call_count, 3)
+        self.assertIn("2 failed", out.getvalue())
+
+    @patch("taxa.management.commands.seed_taxa.time.sleep")
+    @patch("taxa.management.commands.seed_taxa.fetch_and_cache_taxon")
+    def test_reads_names_from_a_file(self, mock_fetch, mock_sleep):
+        mock_fetch.return_value = Taxon(name="Stub", rank="species")
+        path = Path(self.temp_dir.name) / "names.txt"
+        path.write_text("Vulpes vulpes\n\nPanthera leo\n", encoding="utf-8")
+
+        call_command("seed_taxa", file=str(path), delay=0, stdout=StringIO())
+
+        # Blank lines are ignored.
+        self.assertEqual(
+            [call.args[0] for call in mock_fetch.call_args_list],
+            ["Vulpes vulpes", "Panthera leo"],
+        )
+
+    def setUp(self):
+        self.temp_dir = TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
 
 
 class TaxonSearchTests(TestCase):

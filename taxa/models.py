@@ -38,12 +38,14 @@ class Taxon(models.Model):
         ancestors.reverse()  # collected child->root, so flip to root->parent
         return ancestors
     @classmethod
-    def of_the_day(cls, today=None):
-        """Return a taxon chosen deterministically from today's date.
+    def spotlight(cls, today=None):
+        """Return the spotlight taxon, chosen deterministically from the date.
 
-        The same date always yields the same taxon, and it changes at midnight,
-        without storing anything or running a scheduled job. Species with a
-        description are preferred so the highlighted card has something to show.
+        The same date and the same set of cached species always yield the same
+        taxon, and the choice moves on at midnight, without storing anything or
+        running a scheduled job. Note that the pick is an index into the cached
+        species, so caching new species can also change it. Species with a
+        description are preferred so the spotlight card has something to show.
 
         ``today`` can be passed in to make the choice testable.
         """

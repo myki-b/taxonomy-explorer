@@ -9,8 +9,8 @@ is stored once and then browsable without spamming GBIF.
 
 - The home page lists the **kingdoms** to drill down from, rather than every
   cached taxon, so it stays readable as the database grows.
-- A **taxon of the day**, chosen deterministically from the current date, is
-  featured on the home page.
+- A **taxon spotlight** on the home page, picked deterministically from the
+  current date.
 - Each taxon's page shows a **breadcrumb trail** of its full ancestry and a list of
   its immediate children, so the classification tree is navigable in both directions.
 - A management command fetches a species from GBIF and builds its whole lineage,
@@ -51,9 +51,8 @@ cp .env.example .env                # then set DJANGO_SECRET_KEY in .env
 # 5. Set up the database
 python manage.py migrate
 
-# 6. Fetch some data
-python manage.py fetch_taxon "Vulpes vulpes"
-python manage.py fetch_taxon "Canis lupus"   # reuses the shared ancestors
+# 6. Load the sample data (instant, no network needed)
+python manage.py loaddata sample_taxa
 
 # 7. Run the server
 python manage.py runserver
@@ -72,6 +71,23 @@ python manage.py fetch_taxon "Panthera leo"
 
 Running it a second time creates nothing new — existing taxa are served from the
 cache rather than re-fetched.
+
+### Seeding
+
+`seed_taxa` populates the database with a curated list of ~220 species spanning
+animals, plants and fungi, including a cluster of domestic and veterinary
+species. It pauses between requests to stay within the APIs' rate limits:
+
+```bash
+python manage.py seed_taxa                  # the full curated list
+python manage.py seed_taxa --limit 10       # a quick trial run
+python manage.py seed_taxa --file names.txt # your own list, one name per line
+```
+
+A snapshot of the seeded database is committed as a fixture, so a fresh clone
+can skip the API calls entirely with `python manage.py loaddata sample_taxa`.
+
+### Refreshing
 
 To deliberately re-fetch data that is already cached:
 
@@ -93,7 +109,7 @@ A few choices worth calling out:
   place for deliberate, batch-style data loading.
 - **Ancestry logic lives on the model** (`Taxon.get_ancestors`), keeping views thin
   and the behaviour reusable across views, templates, and the shell.
-- **The taxon of the day is derived, not stored.** `Taxon.of_the_day()` indexes
+- **The spotlight taxon is derived, not stored.** `Taxon.spotlight()` indexes
   into the cached species using `date.toordinal() % count`, so the choice is
   stable for a whole day and rotates at midnight without a scheduled job or an
   extra table. The date can be injected, which makes it straightforward to test.
@@ -118,9 +134,10 @@ A few choices worth calling out:
 
 ## Known limitations
 
-- The taxon of the day is derived from the number of cached species, so caching
-  a new species can change the day's pick before midnight. Persisting the choice
-  per date would make it stable.
+- The spotlight taxon is an index into the cached species, so caching a new
+  species can change the pick before midnight - it is stable for a given date
+  and dataset, not for a given date alone. Persisting the choice per date would
+  make it fully stable, at the cost of an extra table.
 - Cached records have no expiry or staleness tracking: a taxon in the database is
   never automatically re-fetched. Refreshing is a manual, explicit action
   (`--refresh` / `--all`). A production version would store a `last_fetched`

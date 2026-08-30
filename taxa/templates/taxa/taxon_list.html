@@ -3,21 +3,21 @@
 {% block title %}Taxonomy Explorer{% endblock %}
 
 {% block content %}
-  {% if taxon_of_the_day %}
+  {% if spotlight %}
     <section class="featured">
-      <p class="featured-label">Taxon of the day</p>
+      <p class="featured-label">Taxon Spotlight</p>
       <div class="summary">
-        {% if taxon_of_the_day.image_url %}
-          <img class="summary-image" src="{{ taxon_of_the_day.image_url }}"
-               alt="{{ taxon_of_the_day.name }}">
+        {% if spotlight.image_url %}
+          <img class="summary-image" src="{{ spotlight.image_url }}"
+               alt="{{ spotlight.name }}">
         {% endif %}
         <h2 class="featured-name">
-          <a href="{% url 'taxon_detail' taxon_of_the_day.pk %}">{{ taxon_of_the_day.name }}</a>
+          <a href="{% url 'taxon_detail' spotlight.pk %}">{{ spotlight.name }}</a>
         </h2>
-        {% if taxon_of_the_day.common_name %}
-          <p class="common-name">{{ taxon_of_the_day.common_name }}</p>
+        {% if spotlight.common_name %}
+          <p class="common-name">{{ spotlight.common_name }}</p>
         {% endif %}
-        <div class="summary-text">{{ taxon_of_the_day.description|safe|truncatewords_html:45 }}</div>
+        <div class="summary-text">{{ spotlight.description|safe }}</div>
       </div>
     </section>
   {% endif %}
